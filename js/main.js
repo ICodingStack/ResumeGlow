@@ -12,7 +12,7 @@ function resumeApp() {
     ═══════════════════════════════════════ */
     showLanding: true,
     isDark: true,
-    activePanel: 'editor',
+    activePanel: "editor",
     previewZoom: 0.85,
 
     // Resume data (live-bound to editor)
@@ -20,7 +20,7 @@ function resumeApp() {
     currentResumeId: null,
 
     // Template & style
-    selectedTemplate: 'modern',
+    selectedTemplate: "modern",
     templates: TEMPLATES,
     accentColors: ACCENT_COLORS,
 
@@ -36,25 +36,25 @@ function resumeApp() {
       skills: false,
       projects: false,
       certs: false,
-      languages: false
+      languages: false,
     },
 
     // Live preview HTML
-    renderedResume: '',
+    renderedResume: "",
 
     // ATS
     atsScore: 0,
     atsChecks: [],
 
     // Job Description Analyzer
-    jobDescription: '',
+    jobDescription: "",
     jdAnalysis: null,
     analyzingJD: false,
 
     // Story Mode
     storyModeOpen: false,
     storyJobIdx: -1,
-    storyJobTitle: '',
+    storyJobTitle: "",
     storyBullets: [],
     storyResult: null,
     storyLoading: false,
@@ -67,12 +67,12 @@ function resumeApp() {
     showResumePicker: false,
 
     // Auto-save
-    lastSaved: '',
+    lastSaved: "",
     _saveTimer: null,
     _lastSaveDate: null,
 
     // Toast
-    toast: { visible: false, message: '', emoji: '✓' },
+    toast: { visible: false, message: "", emoji: "✓" },
     _toastTimer: null,
 
     /* ═══════════════════════════════════════
@@ -80,15 +80,15 @@ function resumeApp() {
     ═══════════════════════════════════════ */
     init() {
       // Load theme preference
-      const savedTheme = storage.get('rg_theme');
-      this.isDark = savedTheme !== 'light';
+      const savedTheme = storage.get("rg_theme");
+      this.isDark = savedTheme !== "light";
       this.applyTheme();
 
       // Load saved resumes list
       this.loadResumeList();
 
       // Load last active resume or create sample
-      const lastId = storage.get('rg_last_resume');
+      const lastId = storage.get("rg_last_resume");
       if (lastId) {
         const loaded = this.loadResumeById(lastId);
         if (!loaded) this.initFreshResume();
@@ -97,9 +97,15 @@ function resumeApp() {
       }
 
       // Watch resume data for live preview
-      this.$watch('resumeData', debounce(() => this.renderPreview(), 80), { deep: true });
-      this.$watch('selectedTemplate', () => this.renderPreview());
-      this.$watch('sectionVisibility', () => this.renderPreview(), { deep: true });
+      this.$watch(
+        "resumeData",
+        debounce(() => this.renderPreview(), 80),
+        { deep: true },
+      );
+      this.$watch("selectedTemplate", () => this.renderPreview());
+      this.$watch("sectionVisibility", () => this.renderPreview(), {
+        deep: true,
+      });
 
       // Initial render
       this.$nextTick(() => {
@@ -112,7 +118,7 @@ function resumeApp() {
       // Use sample resume for demo feel
       this.resumeData = createSampleResume();
       this.currentResumeId = this.resumeData.id;
-      this.selectedTemplate = 'modern';
+      this.selectedTemplate = "modern";
       this.saveCurrentResume(true);
     },
 
@@ -122,22 +128,22 @@ function resumeApp() {
     toggleDark() {
       this.isDark = !this.isDark;
       this.applyTheme();
-      storage.set('rg_theme', this.isDark ? 'dark' : 'light');
+      storage.set("rg_theme", this.isDark ? "dark" : "light");
     },
 
     applyTheme() {
       if (this.isDark) {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-        document.body.classList.remove('light');
-        document.body.style.backgroundColor = '#0a0a0a';
-        document.body.style.color = '#f5f5f5';
+        document.documentElement.classList.add("dark");
+        document.documentElement.classList.remove("light");
+        document.body.classList.remove("light");
+        document.body.style.backgroundColor = "#0a0a0a";
+        document.body.style.color = "#f5f5f5";
       } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-        document.body.classList.add('light');
-        document.body.style.backgroundColor = '#fafaf9';
-        document.body.style.color = '#1a1a1a';
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
+        document.body.classList.add("light");
+        document.body.style.backgroundColor = "#fafaf9";
+        document.body.style.color = "#1a1a1a";
       }
     },
 
@@ -146,18 +152,22 @@ function resumeApp() {
     ═══════════════════════════════════════ */
     startBuilding() {
       this.showLanding = false;
-      this.activePanel = 'editor';
+      this.activePanel = "editor";
       this.$nextTick(() => this.renderPreview());
     },
 
     selectTemplateAndStart(templateId) {
       this.selectedTemplate = templateId;
-      if (this.resumeData) this.resumeData.accentColor = TEMPLATES.find(t => t.id === templateId)?.accent || '#d4852a';
+      if (this.resumeData)
+        this.resumeData.accentColor =
+          TEMPLATES.find((t) => t.id === templateId)?.accent || "#d4852a";
       this.startBuilding();
     },
 
     scrollToTemplates() {
-      document.getElementById('template-gallery')?.scrollIntoView({ behavior: 'smooth' });
+      document
+        .getElementById("template-gallery")
+        ?.scrollIntoView({ behavior: "smooth" });
     },
 
     /* ═══════════════════════════════════════
@@ -170,13 +180,17 @@ function resumeApp() {
         this.renderedResume = renderResume(
           this.resumeData,
           this.selectedTemplate,
-          this.sectionVisibility
+          this.sectionVisibility,
         );
         // Update CSS var on the preview container
-        const el = document.getElementById('resume-preview');
-        if (el) el.style.setProperty('--accent', this.resumeData.accentColor || '#d4852a');
+        const el = document.getElementById("resume-preview");
+        if (el)
+          el.style.setProperty(
+            "--accent",
+            this.resumeData.accentColor || "#d4852a",
+          );
       } catch (e) {
-        console.error('Render error:', e);
+        console.error("Render error:", e);
       }
     },
 
@@ -204,12 +218,12 @@ function resumeApp() {
     addJob() {
       this.resumeData.experience.push({
         id: uid(),
-        title: '',
-        company: '',
-        location: '',
-        startDate: '',
-        endDate: '',
-        bullets: ['']
+        title: "",
+        company: "",
+        location: "",
+        startDate: "",
+        endDate: "",
+        bullets: [""],
       });
       this.autoSave();
     },
@@ -220,7 +234,7 @@ function resumeApp() {
     },
 
     addBullet(jobIdx) {
-      this.resumeData.experience[jobIdx].bullets.push('');
+      this.resumeData.experience[jobIdx].bullets.push("");
       this.autoSave();
     },
 
@@ -232,10 +246,10 @@ function resumeApp() {
     addEducation() {
       this.resumeData.education.push({
         id: uid(),
-        degree: '',
-        school: '',
-        year: '',
-        gpa: ''
+        degree: "",
+        school: "",
+        year: "",
+        gpa: "",
       });
       this.autoSave();
     },
@@ -243,25 +257,28 @@ function resumeApp() {
     addProject() {
       this.resumeData.projects.push({
         id: uid(),
-        name: '',
-        link: '',
-        description: '',
-        tech: ''
+        name: "",
+        link: "",
+        description: "",
+        tech: "",
       });
       this.autoSave();
     },
 
     addSkill(event) {
-      const val = event.target.value.replace(/,+$/, '').trim();
+      const val = event.target.value.replace(/,+$/, "").trim();
       if (!val) return;
       // Handle comma-separated paste
-      const parts = val.split(',').map(s => s.trim()).filter(Boolean);
-      parts.forEach(p => {
+      const parts = val
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      parts.forEach((p) => {
         if (!this.resumeData.skills.includes(p)) {
           this.resumeData.skills.push(p);
         }
       });
-      event.target.value = '';
+      event.target.value = "";
       this.autoSave();
     },
 
@@ -269,7 +286,7 @@ function resumeApp() {
       if (!this.resumeData.skills.includes(skill)) {
         this.resumeData.skills.push(skill);
         this.autoSave();
-        this.showToast(`"${skill}" added to your skills ✓`, '⚡');
+        this.showToast(`"${skill}" added to your skills ✓`, "⚡");
         // Refresh JD analysis
         if (this.jobDescription) this.analyzeJD();
       }
@@ -282,8 +299,8 @@ function resumeApp() {
       const job = this.resumeData.experience[jobIdx];
       if (!job) return;
       this.storyJobIdx = jobIdx;
-      this.storyJobTitle = job.title || 'Position';
-      this.storyBullets = (job.bullets || []).filter(b => b.trim());
+      this.storyJobTitle = job.title || "Position";
+      this.storyBullets = (job.bullets || []).filter((b) => b.trim());
       this.storyResult = null;
       this.storyLoading = false;
       this.storyModeOpen = true;
@@ -298,12 +315,12 @@ function resumeApp() {
         const job = this.resumeData.experience[this.storyJobIdx];
         const rewritten = await rewriteBulletsWithAI(
           this.storyBullets,
-          job?.title || '',
-          job?.company || ''
+          job?.title || "",
+          job?.company || "",
         );
         this.storyResult = rewritten;
       } catch (err) {
-        this.showToast('Story Mode failed — try again', '⚠️');
+        this.showToast("Story Mode failed — try again", "⚠️");
       } finally {
         this.storyLoading = false;
       }
@@ -314,25 +331,25 @@ function resumeApp() {
       this.resumeData.experience[this.storyJobIdx].bullets = this.storyResult;
       this.storyModeOpen = false;
       this.autoSave();
-      this.showToast('Story Mode applied! ✦', '✨');
+      this.showToast("Story Mode applied! ✦", "✨");
     },
 
     /* ═══════════════════════════════════════
        SUMMARY REWRITE
     ═══════════════════════════════════════ */
     async rewriteSummary() {
-      this.showToast('Rewriting summary…', '✦');
+      this.showToast("Rewriting summary…", "✦");
       try {
         const newSummary = await rewriteSummaryWithAI(
           this.resumeData.summary,
           this.resumeData.name,
-          this.resumeData.title
+          this.resumeData.title,
         );
         this.resumeData.summary = newSummary;
         this.autoSave();
-        this.showToast('Summary rewritten!', '✨');
+        this.showToast("Summary rewritten!", "✨");
       } catch {
-        this.showToast('Rewrite failed — try again', '⚠️');
+        this.showToast("Rewrite failed — try again", "⚠️");
       }
     },
 
@@ -357,9 +374,12 @@ function resumeApp() {
       // Simulate async for UX (analysis is sync but feels better with brief delay)
       setTimeout(() => {
         try {
-          this.jdAnalysis = analyzeJobDescription(this.jobDescription, this.resumeData);
+          this.jdAnalysis = analyzeJobDescription(
+            this.jobDescription,
+            this.resumeData,
+          );
         } catch (err) {
-          this.showToast('Analysis failed — try again', '⚠️');
+          this.showToast("Analysis failed — try again", "⚠️");
         } finally {
           this.analyzingJD = false;
         }
@@ -367,22 +387,24 @@ function resumeApp() {
     },
 
     /* ═══════════════════════════════════════
-       PDF EXPORT
+       PDF EXPORT — Native Print
     ═══════════════════════════════════════ */
     async exportPDF() {
       if (this.pdfExporting) return;
       this.pdfExporting = true;
-      this.showToast('Preparing your PDF…', '📄');
 
       try {
         const fileName = suggestFileName(this.resumeData);
         await exportResumePDF(fileName);
-        this.showToast('PDF exported successfully!', '🎉');
+        this.showToast('Print dialog opened — choose "Save as PDF"', "📄");
       } catch (err) {
-        console.error('PDF export error:', err);
-        this.showToast('PDF export failed — try again', '⚠️');
+        console.error("PDF export error:", err);
+        this.showToast("Export failed — try again", "⚠️");
       } finally {
-        this.pdfExporting = false;
+        // Reset quickly since popup opens immediately
+        setTimeout(() => {
+          this.pdfExporting = false;
+        }, 1200);
       }
     },
 
@@ -405,23 +427,23 @@ function resumeApp() {
         id: this.currentResumeId,
         template: this.selectedTemplate,
         sectionVisibility: deepClone(this.sectionVisibility),
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
       };
 
       storage.set(`rg_resume_${this.currentResumeId}`, snapshot);
 
       // Update list index
-      const list = storage.get('rg_resume_list') || [];
-      const existing = list.findIndex(r => r.id === this.currentResumeId);
+      const list = storage.get("rg_resume_list") || [];
+      const existing = list.findIndex((r) => r.id === this.currentResumeId);
       const meta = {
         id: this.currentResumeId,
-        name: this.resumeData.name || 'Untitled Resume',
-        updatedAt: formatDate(Date.now())
+        name: this.resumeData.name || "Untitled Resume",
+        updatedAt: formatDate(Date.now()),
       };
       if (existing >= 0) list[existing] = meta;
       else list.unshift(meta);
-      storage.set('rg_resume_list', list);
-      storage.set('rg_last_resume', this.currentResumeId);
+      storage.set("rg_resume_list", list);
+      storage.set("rg_last_resume", this.currentResumeId);
 
       this.savedResumes = list;
       this._lastSaveDate = new Date();
@@ -437,7 +459,7 @@ function resumeApp() {
     },
 
     loadResumeList() {
-      this.savedResumes = storage.get('rg_resume_list') || [];
+      this.savedResumes = storage.get("rg_resume_list") || [];
     },
 
     loadResumeById(id) {
@@ -446,9 +468,13 @@ function resumeApp() {
 
       this.resumeData = data;
       this.currentResumeId = id;
-      this.selectedTemplate = data.template || 'modern';
-      if (data.sectionVisibility) this.sectionVisibility = data.sectionVisibility;
-      this.$nextTick(() => { this.renderPreview(); this.refreshATS(); });
+      this.selectedTemplate = data.template || "modern";
+      if (data.sectionVisibility)
+        this.sectionVisibility = data.sectionVisibility;
+      this.$nextTick(() => {
+        this.renderPreview();
+        this.refreshATS();
+      });
       return true;
     },
 
@@ -460,21 +486,23 @@ function resumeApp() {
       const r = createBlankResume();
       this.resumeData = r;
       this.currentResumeId = r.id;
-      this.selectedTemplate = 'modern';
+      this.selectedTemplate = "modern";
       this.sectionVisibility = deepClone(DEFAULT_SECTIONS);
       this.jdAnalysis = null;
-      this.jobDescription = '';
+      this.jobDescription = "";
       this.saveCurrentResume(true);
       this.showResumePicker = false;
       this.showLanding = false;
       this.$nextTick(() => this.renderPreview());
-      this.showToast('New resume created!', '✨');
+      this.showToast("New resume created!", "✨");
     },
 
     deleteResume(id) {
       storage.remove(`rg_resume_${id}`);
-      const list = (storage.get('rg_resume_list') || []).filter(r => r.id !== id);
-      storage.set('rg_resume_list', list);
+      const list = (storage.get("rg_resume_list") || []).filter(
+        (r) => r.id !== id,
+      );
+      storage.set("rg_resume_list", list);
       this.savedResumes = list;
       if (this.currentResumeId === id) {
         if (list.length > 0) {
@@ -483,18 +511,18 @@ function resumeApp() {
           this.initFreshResume();
         }
       }
-      this.showToast('Resume deleted', '🗑️');
+      this.showToast("Resume deleted", "🗑️");
     },
 
     /* ═══════════════════════════════════════
        TOAST NOTIFICATIONS
     ═══════════════════════════════════════ */
-    showToast(message, emoji = '✓') {
+    showToast(message, emoji = "✓") {
       clearTimeout(this._toastTimer);
       this.toast = { visible: true, message, emoji };
       this._toastTimer = setTimeout(() => {
         this.toast.visible = false;
       }, 3000);
-    }
+    },
   };
 }

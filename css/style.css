@@ -647,9 +647,31 @@ select.field-input option {
 .resume-preview-root {
   width: 794px;
   min-height: 1123px; /* A4 at 96dpi */
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'DM Sans', Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: normal;
+  word-spacing: normal;
+  color: #1a1a1a;
+  background: white;
   position: relative;
   overflow: hidden;
+  /* Prevent any inherited zoom/scale from the parent affecting text metrics */
+  text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+}
+
+/* Ensure ALL children in the resume inherit sane font settings */
+.resume-preview-root * {
+  letter-spacing: inherit;
+  word-spacing: inherit;
+}
+
+/* Cormorant Garamond display elements */
+.resume-preview-root [style*="Cormorant"],
+.resume-preview-root .header-name,
+.resume-preview-root .section-title-display {
+  font-family: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
 }
 
 /* ─── MODERN TEMPLATE ─── */
@@ -1344,19 +1366,39 @@ select.field-input option {
 .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
 /* ═══════════════════════════════════════════════════
-   PDF EXPORT PRINT STYLES
+   PRINT / PDF STYLES
+   Used both by window.print() in the export popup
+   and by browser direct print (Ctrl+P)
 ═══════════════════════════════════════════════════ */
 @media print {
-  body * { visibility: hidden; }
-  #resume-preview, #resume-preview * { visibility: visible; }
-  #resume-preview {
-    position: fixed !important;
-    top: 0; left: 0;
+  /* Hide the app UI — only show the resume */
+  body > *:not(#resume-print-root) { display: none !important; }
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html, body {
     width: 210mm !important;
-    min-height: 297mm !important;
+    height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    box-shadow: none !important;
+    background: white !important;
+    overflow: hidden !important;
+  }
+
+  #resume-print-root,
+  .resume-preview-root,
+  .resume-modern,
+  .resume-minimal,
+  .resume-executive,
+  .resume-creative,
+  .resume-elegant,
+  .resume-tech {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 }
 
