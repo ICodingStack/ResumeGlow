@@ -1,6 +1,8 @@
 # ✦ ResumeGlow
+## ✨ Preview
 
-**The most elegant and intelligent resume builder on the internet.**
+![ResumeGlow Preview 1](./assets/preview-1.png)
+![ResumeGlow Preview 2](./assets/preview-2.png)
 
 > Resumes That Get You Hired
 
@@ -230,5 +232,5 @@ Built with care using [Alpine.js](https://alpinejs.dev), [Tailwind CSS](https://
 
 ---
 
-<p align="center">Made with ✦ by the open-source community</p>
+**Made with love ❤️ by [BlackBirdo](https://blackbirdo.com)**
 <p align="center"><em>ResumeGlow — Resumes That Get You Hired</em></p>
