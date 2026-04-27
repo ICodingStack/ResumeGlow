@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeGlow — Resumes That Get You Hired</title>
+  <meta name="description" content="The most elegant and intelligent resume builder. AI-powered ATS optimization, story rewriting, and premium templates — completely free." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Cormorant Garamond (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="css/style.css" />
+
+
+    <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="https://blackbirdo.com/images/icon.png" />
+  
+  <script>
+    // Tailwind config
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Cormorant Garamond', 'Georgia', 'serif'],
+            body: ['DM Sans', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            glow: {
+              50:  '#fdf8f0',
+              100: '#faefd9',
+              200: '#f4d9a8',
+              300: '#ecbc6e',
+              400: '#e29f43',
+              500: '#d4852a',
+              600: '#b86820',
+              700: '#984f1e',
+              800: '#7c3f1f',
+              900: '#66341d',
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.6s ease forwards',
+            'slide-up': 'slideUp 0.5s ease forwards',
+            'glow-pulse': 'glowPulse 3s ease-in-out infinite',
+            'float': 'float 6s ease-in-out infinite',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="font-body bg-neutral-950 text-neutral-100 min-h-screen transition-colors duration-300" x-data="resumeApp()" x-init="init()">
+
+  <!-- ═══════════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════════ -->
+  <header class="sticky top-0 z-50 border-b border-white/5 backdrop-blur-xl bg-neutral-950/80 dark:bg-neutral-950/80 light:bg-white/80">
+    <div class="max-w-screen-2xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+
+      <!-- Logo -->
+      <a href="#" @click.prevent="showLanding = true" class="flex items-center gap-3 group">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-glow-400 to-glow-600 flex items-center justify-center shadow-lg shadow-glow-500/20 group-hover:shadow-glow-500/40 transition-shadow">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1L10 6H15L11 9.5L12.5 15L8 12L3.5 15L5 9.5L1 6H6L8 1Z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <span class="font-display text-xl font-semibold tracking-tight header-text-primary">ResumeGlow</span>
+          <span class="hidden sm:block text-[10px] header-text-muted -mt-1 tracking-widest uppercase">Resumes That Get You Hired</span>
+        </div>
+      </a>
+
+      <!-- Center nav (editor mode) -->
+      <nav x-show="!showLanding" x-transition class="hidden md:flex items-center gap-1 bg-white/5 rounded-xl p-1">
+        <button @click="activePanel = 'editor'" :class="activePanel === 'editor' ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white'" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all">Editor</button>
+        <button @click="activePanel = 'templates'" :class="activePanel === 'templates' ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white'" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all">Templates</button>
+        <button @click="activePanel = 'ats'" :class="activePanel === 'ats' ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white'" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all">ATS Score</button>
+        <button @click="activePanel = 'jd'" :class="activePanel === 'jd' ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white'" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all">Job Match</button>
+      </nav>
+
+      <!-- Right actions -->
+      <div class="flex items-center gap-2">
+        <!-- Resumes manager -->
+        <button x-show="!showLanding" x-transition @click="showResumePicker = !showResumePicker" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-sm header-text-secondary header-btn transition-all">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="5" height="6" rx="1"/><rect x="8" y="1" width="5" height="6" rx="1"/><rect x="1" y="9" width="5" height="4" rx="1"/><rect x="8" y="9" width="5" height="4" rx="1"/></svg>
+          My Resumes
+        </button>
+
+        <!-- Export PDF -->
+        <button x-show="!showLanding" x-transition @click="exportPDF()" :disabled="pdfExporting" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-glow-500 hover:bg-glow-400 text-white transition-all shadow-lg shadow-glow-500/20 hover:shadow-glow-500/40 disabled:opacity-60">
+          <span x-show="!pdfExporting">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v8M4 6l3 3 3-3M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1"/></svg>
+          </span>
+          <span x-show="pdfExporting" class="animate-spin">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5" stroke-dasharray="20" stroke-dashoffset="10"/></svg>
+          </span>
+          <span x-text="pdfExporting ? 'Exporting…' : 'Export PDF'"></span>
+        </button>
+
+        <!-- Dark/Light toggle -->
+        <button @click="toggleDark()" class="header-icon-btn" :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+          <!-- Sun icon — shown in dark mode (click to go light) -->
+          <svg x-show="isDark" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+          <!-- Moon icon — shown in light mode (click to go dark) -->
+          <svg x-show="!isDark" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+        </button>
+
+        <!-- GitHub -->
+        <a href="https://github.com/" target="_blank" class="header-icon-btn" title="View on GitHub">
+          <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .2C3.6.2 0 3.8 0 8.2c0 3.5 2.3 6.5 5.5 7.6.4.1.5-.2.5-.4v-1.4c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.2 1.9.8 2.3.6.1-.5.3-.8.5-1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8.6-.2 1.3-.3 2-.3s1.4.1 2 .3c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.8-3.7 4 .3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4C13.7 14.7 16 11.7 16 8.2 16 3.8 12.4.2 8 .2z"/></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════
+       LANDING PAGE
+  ═══════════════════════════════════════════════════ -->
+  <section x-show="showLanding" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="relative min-h-[calc(100vh-4rem)] flex flex-col">
+
+    <!-- Background orbs -->
+    <div class="pointer-events-none absolute inset-0 overflow-hidden">
+      <div class="absolute -top-40 -right-40 w-96 h-96 bg-glow-500/10 rounded-full blur-3xl animate-float"></div>
+      <div class="absolute top-1/2 -left-40 w-80 h-80 bg-glow-600/8 rounded-full blur-3xl animate-float" style="animation-delay:2s"></div>
+      <div class="absolute -bottom-20 right-1/3 w-64 h-64 bg-glow-400/6 rounded-full blur-3xl animate-float" style="animation-delay:4s"></div>
+      <!-- Fine grid -->
+      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+    </div>
+
+    <!-- Hero -->
+    <div class="relative flex-1 flex flex-col items-center justify-center text-center px-6 py-24 max-w-4xl mx-auto w-full">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-glow-500/10 border border-glow-500/20 text-glow-400 text-sm font-medium mb-8 animate-fade-in">
+        <span class="w-2 h-2 rounded-full bg-glow-400 animate-pulse"></span>
+        AI-Powered · ATS Optimized · 100% Free
+      </div>
+
+      <h1 class="font-display text-6xl md:text-8xl font-light leading-none tracking-tight mb-6 animate-slide-up" style="animation-delay:0.1s">
+        Resumes That <br>
+        <em class="text-glow-400 not-italic">Get You Hired</em>
+      </h1>
+
+      <p class="text-neutral-400 text-lg md:text-xl max-w-2xl leading-relaxed mb-10 animate-slide-up" style="animation-delay:0.2s">
+        The most elegant resume builder on the internet. Intelligent ATS scoring, AI story rewriting, real-time job matching — and templates so beautiful they feel like a $500 professional design.
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center gap-4 animate-slide-up" style="animation-delay:0.3s">
+        <button @click="startBuilding()" class="group flex items-center gap-3 px-8 py-4 bg-glow-500 hover:bg-glow-400 text-white rounded-2xl font-semibold text-lg transition-all shadow-2xl shadow-glow-500/30 hover:shadow-glow-500/50 hover:-translate-y-0.5">
+          Start Building Free
+          <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h12M10 4l6 6-6 6"/></svg>
+        </button>
+        <button @click="scrollToTemplates()" class="px-8 py-4 rounded-2xl border border-white/10 text-neutral-300 hover:text-white hover:border-white/20 hover:bg-white/5 font-medium text-lg transition-all">
+          View Templates
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="flex items-center gap-8 mt-16 text-center animate-slide-up" style="animation-delay:0.4s">
+        <div>
+          <div class="font-display text-3xl text-white font-medium">6</div>
+          <div class="text-xs text-neutral-500 uppercase tracking-widest mt-1">Templates</div>
+        </div>
+        <div class="w-px h-8 bg-white/10"></div>
+        <div>
+          <div class="font-display text-3xl text-white font-medium">AI</div>
+          <div class="text-xs text-neutral-500 uppercase tracking-widest mt-1">Story Mode</div>
+        </div>
+        <div class="w-px h-8 bg-white/10"></div>
+        <div>
+          <div class="font-display text-3xl text-white font-medium">ATS</div>
+          <div class="text-xs text-neutral-500 uppercase tracking-widest mt-1">Optimizer</div>
+        </div>
+        <div class="w-px h-8 bg-white/10"></div>
+        <div>
+          <div class="font-display text-3xl text-white font-medium">PDF</div>
+          <div class="text-xs text-neutral-500 uppercase tracking-widest mt-1">Export</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Template Gallery -->
+    <div id="template-gallery" class="relative px-6 pb-24 max-w-screen-xl mx-auto w-full">
+      <h2 class="font-display text-4xl font-light text-center mb-3">Choose Your Template</h2>
+      <p class="text-neutral-500 text-center mb-12">Every template is ATS-compatible and print-ready</p>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <template x-for="tmpl in templates" :key="tmpl.id">
+          <div @click="selectTemplateAndStart(tmpl.id)"
+               :class="selectedTemplate === tmpl.id ? 'border-glow-500 shadow-glow-500/20 shadow-lg' : 'border-white/5 hover:border-white/15'"
+               class="group relative cursor-pointer rounded-2xl border bg-white/3 hover:bg-white/5 overflow-hidden transition-all hover:-translate-y-1">
+            <!-- Template thumbnail -->
+            <div class="aspect-[3/4] p-3 flex flex-col gap-1.5" :style="`background: ${tmpl.previewBg}`">
+              <!-- Mini resume preview -->
+              <div class="w-8 h-8 rounded-full mx-auto mb-1" :style="`background: ${tmpl.accent}`"></div>
+              <div class="h-1.5 rounded-full" :style="`background: ${tmpl.accent}; width: 70%; margin: 0 auto`"></div>
+              <div class="h-1 rounded-full bg-white/20 w-1/2 mx-auto"></div>
+              <div class="mt-1 space-y-1">
+                <div class="h-1 rounded-full bg-white/15 w-full"></div>
+                <div class="h-1 rounded-full bg-white/10 w-4/5"></div>
+                <div class="h-1 rounded-full bg-white/10 w-3/5"></div>
+              </div>
+              <div class="mt-1 h-1 rounded-full w-2/5" :style="`background: ${tmpl.accent}99`"></div>
+              <div class="space-y-1">
+                <div class="h-1 rounded-full bg-white/15 w-full"></div>
+                <div class="h-1 rounded-full bg-white/10 w-4/5"></div>
+                <div class="h-1 rounded-full bg-white/10 w-3/4"></div>
+              </div>
+            </div>
+            <!-- Label -->
+            <div class="p-3 text-center">
+              <div class="text-sm font-medium text-white" x-text="tmpl.name"></div>
+              <div class="text-xs text-neutral-500 mt-0.5" x-text="tmpl.tagline"></div>
+            </div>
+            <!-- Selected badge -->
+            <div x-show="selectedTemplate === tmpl.id" class="absolute top-2 right-2 w-6 h-6 rounded-full bg-glow-500 flex items-center justify-center">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+    <!-- ── BlackBirdo Footer ── -->
+    <footer class="relative border-t border-white/5 landing-footer py-8 px-6">
+      <div class="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <!-- Left: ResumeGlow credit -->
+        <div class="flex items-center gap-2 text-sm footer-text-muted">
+          <div class="w-5 h-5 rounded bg-gradient-to-br from-glow-400 to-glow-600 flex items-center justify-center">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1L10 6H15L11 9.5L12.5 15L8 12L3.5 15L5 9.5L1 6H6L8 1Z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>
+          </div>
+          <span>ResumeGlow — Open Source &amp; Free Forever</span>
+        </div>
+
+        <!-- Center: Made with love by BlackBirdo -->
+        <a href="http://blackbirdo.com" target="_blank" rel="noopener noreferrer" class="blackbirdo-credit group">
+          <span class="footer-text-muted text-sm">Made with</span>
+          <svg class="blackbirdo-heart" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+            <path d="M7 12.5S1 8.5 1 4.5A3 3 0 017 3a3 3 0 016 1.5C13 8.5 7 12.5 7 12.5z"/>
+          </svg>
+          <span class="footer-text-muted text-sm">by</span>
+          <span class="blackbirdo-name">
+            <svg class="blackbirdo-bird" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 4c-1.5 1-3 1.5-4.5 1.5C14 5.5 12 4 10 4c-3 0-5.5 2-6 5 .5-.5 1.5-1 2.5-1 2 0 3.5 1.5 3.5 3.5 0 1-.5 2-1.5 2.5 1 .5 2 .5 3 0C13 13 14 11.5 14 10c0-.5 0-1-.2-1.5C15.3 9 17 10 18 11.5c.5-1 .5-2 0-3C19.5 8.5 21 7 21 4z"/>
+            </svg>
+            <span class="blackbirdo-text">Black<span class="blackbirdo-birdo">Birdo</span></span>
+          </span>
+        </a>
+
+        <!-- Right: Links -->
+        <div class="flex items-center gap-5 text-xs footer-text-muted">
+          <a href="https://github.com/" target="_blank" class="footer-link">GitHub</a>
+          <span class="opacity-30">·</span>
+          <a href="https://github.com/" target="_blank" class="footer-link">MIT License</a>
+          <span class="opacity-30">·</span>
+          <span>© 2026</span>
+        </div>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════
+       BUILDER APP
+  ═══════════════════════════════════════════════════ -->
+  <main x-show="!showLanding" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="flex h-[calc(100vh-4rem)]">
+
+    <!-- LEFT SIDEBAR / PANEL SELECTOR (mobile) -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-neutral-900/95 backdrop-blur-xl border-t border-white/5 flex">
+      <button @click="activePanel='editor'" :class="activePanel==='editor'?'text-glow-400':'text-neutral-500'" class="flex-1 py-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="14" height="14" rx="2"/><path d="M6 6h6M6 9h6M6 12h3"/></svg>
+        Edit
+      </button>
+      <button @click="activePanel='preview'" :class="activePanel==='preview'?'text-glow-400':'text-neutral-500'" class="flex-1 py-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 9s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/><circle cx="9" cy="9" r="2.5"/></svg>
+        Preview
+      </button>
+      <button @click="activePanel='ats'" :class="activePanel==='ats'?'text-glow-400':'text-neutral-500'" class="flex-1 py-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l3 2"/></svg>
+        ATS
+      </button>
+      <button @click="activePanel='jd'" :class="activePanel==='jd'?'text-glow-400':'text-neutral-500'" class="flex-1 py-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h10v10H4z"/><path d="M7 8h4M7 11h2"/></svg>
+        JD
+      </button>
+    </div>
+
+    <!-- ═══ LEFT PANEL: EDITOR ═══ -->
+    <aside :class="activePanel === 'editor' || activePanel === 'templates' || activePanel === 'ats' || activePanel === 'jd' ? 'flex' : 'hidden md:flex'" class="w-full md:w-[420px] lg:w-[460px] flex-col border-r border-white/5 overflow-hidden bg-neutral-900/50">
+
+      <!-- Panel switcher -->
+      <div class="flex border-b border-white/5 bg-neutral-900/80 backdrop-blur shrink-0">
+        <button @click="activePanel='editor'" :class="activePanel==='editor'?'border-b-2 border-glow-500 text-white':'text-neutral-500 hover:text-neutral-300'" class="flex-1 py-3 text-sm font-medium transition-all text-center">Resume</button>
+        <button @click="activePanel='templates'" :class="activePanel==='templates'?'border-b-2 border-glow-500 text-white':'text-neutral-500 hover:text-neutral-300'" class="flex-1 py-3 text-sm font-medium transition-all text-center">Style</button>
+        <button @click="activePanel='ats'" :class="activePanel==='ats'?'border-b-2 border-glow-500 text-white':'text-neutral-500 hover:text-neutral-300'" class="flex-1 py-3 text-sm font-medium transition-all text-center">ATS</button>
+        <button @click="activePanel='jd'" :class="activePanel==='jd'?'border-b-2 border-glow-500 text-white':'text-neutral-500 hover:text-neutral-300'" class="flex-1 py-3 text-sm font-medium transition-all text-center">Job Match</button>
+      </div>
+
+      <!-- Panel content -->
+      <div class="flex-1 overflow-y-auto scrollbar-thin">
+
+        <!-- ─── EDITOR PANEL ─── -->
+        <div x-show="activePanel === 'editor'" class="p-5 space-y-6">
+
+          <!-- Personal Info -->
+          <div class="panel-section">
+            <div class="section-header" @click="toggleSection('personal')">
+              <span class="section-icon">👤</span>
+              <span>Personal Info</span>
+              <svg :class="openSections.personal ? 'rotate-180' : ''" class="w-4 h-4 ml-auto text-neutral-500 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div x-show="openSections.personal" x-transition class="pt-4 space-y-3">
+              <!-- Photo upload -->
+              <div class="flex items-center gap-4 mb-4">
+                <div @click="$refs.photoInput.click()" class="relative w-16 h-16 rounded-full bg-white/5 border-2 border-dashed border-white/15 hover:border-glow-500/50 flex items-center justify-center cursor-pointer overflow-hidden transition-all group">
+                  <img x-show="resumeData.photo" :src="resumeData.photo" class="absolute inset-0 w-full h-full object-cover" />
+                  <div x-show="!resumeData.photo" class="text-neutral-500 group-hover:text-glow-400 transition-colors">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10h12"/></svg>
+                  </div>
+                </div>
+                <input type="file" accept="image/*" x-ref="photoInput" @change="uploadPhoto($event)" class="hidden" />
+                <div class="flex-1">
+                  <p class="text-sm text-neutral-300">Profile Photo</p>
+                  <p class="text-xs text-neutral-600 mt-0.5">Optional · PNG, JPG</p>
+                  <button x-show="resumeData.photo" @click="resumeData.photo = ''" class="text-xs text-red-400 hover:text-red-300 mt-1">Remove</button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2">
+                  <label class="field-label">Full Name</label>
+                  <input x-model="resumeData.name" @input="autoSave()" type="text" placeholder="Alexandra Chen" class="field-input" />
+                </div>
+                <div class="col-span-2">
+                  <label class="field-label">Professional Title</label>
+                  <input x-model="resumeData.title" @input="autoSave()" type="text" placeholder="Senior Product Designer" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">Email</label>
+                  <input x-model="resumeData.email" @input="autoSave()" type="email" placeholder="alex@email.com" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">Phone</label>
+                  <input x-model="resumeData.phone" @input="autoSave()" type="tel" placeholder="+1 555 0100" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">Location</label>
+                  <input x-model="resumeData.location" @input="autoSave()" type="text" placeholder="San Francisco, CA" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">Website / LinkedIn</label>
+                  <input x-model="resumeData.website" @input="autoSave()" type="url" placeholder="linkedin.com/in/alex" class="field-input" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="panel-section">
+            <div class="section-header" @click="toggleSection('summary')">
+              <span class="section-icon">✦</span>
+              <span>Professional Summary</span>
+              <svg :class="openSections.summary ? 'rotate-180' : ''" class="w-4 h-4 ml-auto text-neutral-500 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div x-show="openSections.summary" x-transition class="pt-4">
+              <textarea x-model="resumeData.summary" @input="autoSave()" rows="4" placeholder="A compelling 2-3 sentence overview of your expertise, key achievements, and what makes you unique…" class="field-input resize-none w-full"></textarea>
+              <button @click="rewriteSummary()" class="mt-2 flex items-center gap-2 text-xs text-glow-400 hover:text-glow-300 font-medium transition-colors">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6a4 4 0 014-4 4 4 0 012.83 1.17"/><path d="M10 6a4 4 0 01-4 4 4 4 0 01-2.83-1.17"/><path d="M10 2v3H7M2 10V7h3"/></svg>
+                Rewrite with AI
+              </button>
+            </div>
+          </div>
+
+          <!-- Experience -->
+          <div class="panel-section">
+            <div class="section-header" @click="toggleSection('experience')">
+              <span class="section-icon">💼</span>
+              <span>Experience</span>
+              <svg :class="openSections.experience ? 'rotate-180' : ''" class="w-4 h-4 ml-auto text-neutral-500 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div x-show="openSections.experience" x-transition class="pt-4 space-y-4">
+              <template x-for="(job, idx) in resumeData.experience" :key="job.id">
+                <div class="job-card">
+                  <div class="flex items-start justify-between gap-2 mb-3">
+                    <div class="flex-1 min-w-0">
+                      <input x-model="job.title" @input="autoSave()" type="text" placeholder="Job Title" class="field-input text-sm mb-2" />
+                      <div class="grid grid-cols-2 gap-2">
+                        <input x-model="job.company" @input="autoSave()" type="text" placeholder="Company" class="field-input text-sm" />
+                        <input x-model="job.location" @input="autoSave()" type="text" placeholder="Location" class="field-input text-sm" />
+                        <input x-model="job.startDate" @input="autoSave()" type="text" placeholder="Start (e.g. Jan 2022)" class="field-input text-sm" />
+                        <input x-model="job.endDate" @input="autoSave()" type="text" placeholder="End / Present" class="field-input text-sm" />
+                      </div>
+                    </div>
+                    <button @click="removeJob(idx)" class="shrink-0 w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center transition-all mt-1">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                    </button>
+                  </div>
+
+                  <!-- Bullet points -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="field-label mb-0">Achievements & Responsibilities</label>
+                      <button @click="storyMode(idx)" class="story-btn">
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5.5 1l1.2 3H10L7.4 5.7 8.5 9 5.5 7 2.5 9l1.1-3.3L1 4h3.3z"/></svg>
+                        Story Mode
+                      </button>
+                    </div>
+                    <template x-for="(bullet, bIdx) in job.bullets" :key="bIdx">
+                      <div class="flex items-start gap-2">
+                        <span class="text-glow-500 mt-2.5 shrink-0">·</span>
+                        <input x-model="job.bullets[bIdx]" @input="autoSave()" type="text" placeholder="Achieved X by doing Y, resulting in Z…" class="field-input text-sm flex-1" />
+                        <button @click="removeBullet(idx, bIdx)" class="shrink-0 w-6 h-6 rounded text-neutral-600 hover:text-red-400 flex items-center justify-center mt-1.5 transition-colors">
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l8 8M9 1l-8 8"/></svg>
+                        </button>
+                      </div>
+                    </template>
+                    <button @click="addBullet(idx)" class="text-xs text-neutral-500 hover:text-glow-400 flex items-center gap-1.5 mt-1 transition-colors">
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 1v8M1 5h8"/></svg>
+                      Add bullet
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <button @click="addJob()" class="w-full py-2.5 rounded-xl border border-dashed border-white/10 hover:border-glow-500/40 hover:bg-glow-500/5 text-sm text-neutral-400 hover:text-glow-400 transition-all flex items-center justify-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v12M1 7h12"/></svg>
+                Add Position
+              </button>
+            </div>
+          </div>
+
+          <!-- Education -->
+          <div class="panel-section">
+            <div class="section-header" @click="toggleSection('education')">
+              <span class="section-icon">🎓</span>
+              <span>Education</span>
+              <svg :class="openSections.education ? 'rotate-180' : ''" class="w-4 h-4 ml-auto text-neutral-500 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div x-show="openSections.education" x-transition class="pt-4 space-y-3">
+              <template x-for="(edu, idx) in resumeData.education" :key="edu.id">
+                <div class="job-card">
+                  <div class="flex items-start gap-2">
+                    <div class="flex-1 grid grid-cols-2 gap-2">
+                      <input x-model="edu.degree" @input="autoSave()" type="text" placeholder="Degree / Certification" class="field-input text-sm col-span-2" />
+                      <input x-model="edu.school" @input="autoSave()" type="text" placeholder="Institution" class="field-input text-sm" />
+                      <input x-model="edu.year" @input="autoSave()" type="text" placeholder="Year (e.g. 2020)" class="field-input text-sm" />
+                      <input x-model="edu.gpa" @input="autoSave()" type="text" placeholder="GPA (optional)" class="field-input text-sm col-span-2" />
+                    </div>
+                    <button @click="resumeData.education.splice(idx, 1); autoSave()" class="shrink-0 w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center transition-all mt-1">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <button @click="addEducation()" class="w-full py-2.5 rounded-xl border border-dashed border-white/10 hover:border-glow-500/40 hover:bg-glow-500/5 text-sm text-neutral-400 hover:text-glow-400 transition-all flex items-center justify-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v12M1 7h12"/></svg>
+                Add Education
+              </button>
+            </div>
+          </div>
+
+          <!-- Skills -->
+          <div class="panel-section">
+            <div class="section-header" @click="toggleSection('skills')">
+              <span class="section-icon">⚡</span>
+              <span>Skills</span>
+              <svg :class="openSections.skills ? 'rotate-180' : ''" class="w-4 h-4 ml-auto text-neutral-500 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div x-show="openSections.skills" x-transition class="pt-4">
+              <p class="text-xs text-neutral-500 mb-3">Enter skills separated by commas or press Enter</p>
+              <!-- Skill tags -->
+              <div class="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
+                <template x-for="(skill, idx) in resumeData.skills" :key="idx">
+                  <span class="skill-tag group">
+                    <span x-text="skill"></span>
+                    <button @click="resumeData.skills.splice(idx, 1); autoSave()" class="ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-400 hover:text-red-400">×</button>
+                  </span>
+                </template>
+              </div>
+              <input @keydown.enter.prevent="addSkill($event)" @keydown.comma.prevent="addSkill($event)" type="text" placeholder="Type a skill and press Enter…" class="field-input text-sm" />
+            </div>
+          </div>
+
+          <!-- Projects -->
+          <div class="panel-section">
+            <div class="section-header" @click="toggleSection('projects')">
+              <span class="section-icon">🚀</span>
+              <span>Projects</span>
+              <svg :class="openSections.projects ? 'rotate-180' : ''" class="w-4 h-4 ml-auto text-neutral-500 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div x-show="openSections.projects" x-transition class="pt-4 space-y-3">
+              <template x-for="(proj, idx) in resumeData.projects" :key="proj.id">
+                <div class="job-card">
+                  <div class="flex items-start gap-2">
+                    <div class="flex-1 space-y-2">
+                      <input x-model="proj.name" @input="autoSave()" type="text" placeholder="Project Name" class="field-input text-sm" />
+                      <input x-model="proj.link" @input="autoSave()" type="url" placeholder="URL (optional)" class="field-input text-sm" />
+                      <textarea x-model="proj.description" @input="autoSave()" rows="2" placeholder="What did you build and what impact did it have?" class="field-input text-sm w-full resize-none"></textarea>
+                      <input x-model="proj.tech" @input="autoSave()" type="text" placeholder="Tech stack (React, Node, AWS…)" class="field-input text-sm" />
+                    </div>
+                    <button @click="resumeData.projects.splice(idx, 1); autoSave()" class="shrink-0 w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center transition-all mt-1">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <button @click="addProject()" class="w-full py-2.5 rounded-xl border border-dashed border-white/10 hover:border-glow-500/40 hover:bg-glow-500/5 text-sm text-neutral-400 hover:text-glow-400 transition-all flex items-center justify-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v12M1 7h12"/></svg>
+                Add Project
+              </button>
+            </div>
+          </div>
+
+          <!-- Certifications -->
+          <div class="panel-section">
+            <div class="section-header" @click="toggleSection('certs')">
+              <span class="section-icon">🏅</span>
+              <span>Certifications</span>
+              <svg :class="openSections.certs ? 'rotate-180' : ''" class="w-4 h-4 ml-auto text-neutral-500 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div x-show="openSections.certs" x-transition class="pt-4 space-y-2">
+              <template x-for="(cert, idx) in resumeData.certifications" :key="idx">
+                <div class="flex items-center gap-2">
+                  <input x-model="resumeData.certifications[idx]" @input="autoSave()" type="text" placeholder="e.g. AWS Solutions Architect · 2023" class="field-input text-sm flex-1" />
+                  <button @click="resumeData.certifications.splice(idx, 1); autoSave()" class="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center shrink-0 transition-all">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l8 8M9 1l-8 8"/></svg>
+                  </button>
+                </div>
+              </template>
+              <button @click="resumeData.certifications.push(''); autoSave()" class="w-full py-2.5 rounded-xl border border-dashed border-white/10 hover:border-glow-500/40 hover:bg-glow-500/5 text-sm text-neutral-400 hover:text-glow-400 transition-all flex items-center justify-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v12M1 7h12"/></svg>
+                Add Certification
+              </button>
+            </div>
+          </div>
+
+          <!-- Languages -->
+          <div class="panel-section mb-8">
+            <div class="section-header" @click="toggleSection('languages')">
+              <span class="section-icon">🌐</span>
+              <span>Languages</span>
+              <svg :class="openSections.languages ? 'rotate-180' : ''" class="w-4 h-4 ml-auto text-neutral-500 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div x-show="openSections.languages" x-transition class="pt-4 space-y-2">
+              <template x-for="(lang, idx) in resumeData.languages" :key="idx">
+                <div class="flex items-center gap-2">
+                  <input x-model="resumeData.languages[idx].name" @input="autoSave()" type="text" placeholder="Language" class="field-input text-sm flex-1" />
+                  <select x-model="resumeData.languages[idx].level" @change="autoSave()" class="field-input text-sm w-32">
+                    <option value="Native">Native</option>
+                    <option value="Fluent">Fluent</option>
+                    <option value="Advanced">Advanced</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Basic">Basic</option>
+                  </select>
+                  <button @click="resumeData.languages.splice(idx, 1); autoSave()" class="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center shrink-0 transition-all">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l8 8M9 1l-8 8"/></svg>
+                  </button>
+                </div>
+              </template>
+              <button @click="resumeData.languages.push({name:'',level:'Fluent'}); autoSave()" class="w-full py-2.5 rounded-xl border border-dashed border-white/10 hover:border-glow-500/40 hover:bg-glow-500/5 text-sm text-neutral-400 hover:text-glow-400 transition-all flex items-center justify-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v12M1 7h12"/></svg>
+                Add Language
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ─── STYLE PANEL ─── -->
+        <div x-show="activePanel === 'templates'" class="p-5 space-y-6">
+          <div>
+            <h3 class="text-sm font-semibold text-neutral-300 mb-4">Template</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <template x-for="tmpl in templates" :key="tmpl.id">
+                <button @click="selectedTemplate = tmpl.id; autoSave()"
+                        :class="selectedTemplate === tmpl.id ? 'border-glow-500 bg-glow-500/10 text-white' : 'border-white/10 text-neutral-400 hover:border-white/20 hover:text-neutral-300'"
+                        class="p-3 rounded-xl border text-left transition-all">
+                  <div class="text-sm font-medium" x-text="tmpl.name"></div>
+                  <div class="text-xs mt-0.5 opacity-70" x-text="tmpl.tagline"></div>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-semibold text-neutral-300 mb-3">Accent Color</h3>
+            <div class="flex flex-wrap gap-2">
+              <template x-for="color in accentColors" :key="color.value">
+                <button @click="resumeData.accentColor = color.value; autoSave()"
+                        :style="`background: ${color.value}`"
+                        :class="resumeData.accentColor === color.value ? 'ring-2 ring-offset-2 ring-offset-neutral-900 ring-white scale-110' : 'hover:scale-105'"
+                        class="w-8 h-8 rounded-full transition-all border border-black/20"
+                        :title="color.name">
+                </button>
+              </template>
+            </div>
+            <!-- Custom color -->
+            <div class="flex items-center gap-3 mt-3">
+              <input type="color" x-model="resumeData.accentColor" @input="autoSave()" class="w-8 h-8 rounded-lg overflow-hidden cursor-pointer border border-white/10 bg-transparent" />
+              <span class="text-xs text-neutral-500">Custom color</span>
+              <span class="text-xs text-neutral-400 font-mono" x-text="resumeData.accentColor"></span>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-semibold text-neutral-300 mb-3">Font Size</h3>
+            <input type="range" min="10" max="16" step="0.5" x-model="resumeData.fontSize" @input="autoSave()" class="w-full accent-glow-500" />
+            <div class="flex justify-between text-xs text-neutral-500 mt-1">
+              <span>Compact</span>
+              <span x-text="`${resumeData.fontSize}px`" class="text-neutral-400"></span>
+              <span>Spacious</span>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-semibold text-neutral-300 mb-3">Section Visibility</h3>
+            <div class="space-y-2">
+              <template x-for="section in sectionVisibility" :key="section.key">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div class="relative">
+                    <input type="checkbox" x-model="section.visible" @change="autoSave()" class="sr-only" />
+                    <div :class="section.visible ? 'bg-glow-500' : 'bg-white/10'" class="w-10 h-5 rounded-full transition-colors">
+                      <div :class="section.visible ? 'translate-x-5' : 'translate-x-0.5'" class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                    </div>
+                  </div>
+                  <span class="text-sm text-neutral-400 group-hover:text-neutral-300 transition-colors capitalize" x-text="section.label"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── ATS PANEL ─── -->
+        <div x-show="activePanel === 'ats'" class="p-5 space-y-5" x-data="{ scoring: false }" x-init="$watch('activePanel', v => v === 'ats' && refreshATS())">
+          <div>
+            <h3 class="text-sm font-semibold text-neutral-300 mb-1">ATS Compatibility Score</h3>
+            <p class="text-xs text-neutral-500 mb-4">Your resume is analyzed against Applicant Tracking System criteria in real time.</p>
+
+            <!-- Score ring -->
+            <div class="flex items-center gap-6 mb-6">
+              <div class="relative w-24 h-24 shrink-0">
+                <svg class="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
+                  <circle cx="48" cy="48" r="38" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8" />
+                  <circle cx="48" cy="48" r="38" fill="none"
+                          :stroke="atsScore >= 80 ? '#4ade80' : atsScore >= 60 ? '#facc15' : '#f87171'"
+                          stroke-width="8"
+                          stroke-linecap="round"
+                          :stroke-dasharray="`${2 * Math.PI * 38}`"
+                          :stroke-dashoffset="`${2 * Math.PI * 38 * (1 - atsScore / 100)}`"
+                          class="transition-all duration-700" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="font-display text-2xl font-medium" :class="atsScore >= 80 ? 'text-green-400' : atsScore >= 60 ? 'text-yellow-400' : 'text-red-400'" x-text="`${atsScore}%`"></span>
+                  <span class="text-[10px] text-neutral-500">ATS Score</span>
+                </div>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-white mb-1" x-text="atsScore >= 80 ? 'Excellent' : atsScore >= 60 ? 'Good – Improvable' : 'Needs Work'"></div>
+                <p class="text-xs text-neutral-400 leading-relaxed" x-text="atsScore >= 80 ? 'Your resume is highly ATS-friendly and should pass most automated filters.' : atsScore >= 60 ? 'A few improvements will significantly boost your chances.' : 'Address the issues below to ensure your resume reaches hiring managers.'"></p>
+              </div>
+            </div>
+
+            <!-- Checks -->
+            <div class="space-y-2">
+              <template x-for="check in atsChecks" :key="check.label">
+                <div class="flex items-start gap-3 p-3 rounded-xl" :class="check.pass ? 'bg-green-500/8 border border-green-500/15' : 'bg-red-500/8 border border-red-500/15'">
+                  <div class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5" :class="check.pass ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'">
+                    <svg x-show="check.pass" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+                    <svg x-show="!check.pass" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l6 6M8 2l-6 6"/></svg>
+                  </div>
+                  <div>
+                    <div class="text-xs font-medium" :class="check.pass ? 'text-green-300' : 'text-red-300'" x-text="check.label"></div>
+                    <div class="text-xs text-neutral-500 mt-0.5" x-text="check.detail"></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <button @click="refreshATS()" class="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-neutral-300 hover:text-white flex items-center justify-center gap-2 transition-all">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 7a5 5 0 005 5 5 5 0 003.54-1.46"/><path d="M12 7a5 5 0 00-5-5 5 5 0 00-3.54 1.46"/><path d="M12 3v4h-4M2 11V7h4"/></svg>
+            Refresh Analysis
+          </button>
+        </div>
+
+        <!-- ─── JOB MATCH PANEL ─── -->
+        <div x-show="activePanel === 'jd'" class="p-5 space-y-5">
+          <div>
+            <h3 class="text-sm font-semibold text-neutral-300 mb-1">Job Description Analyzer</h3>
+            <p class="text-xs text-neutral-500 mb-4">Paste a job description to get keyword suggestions, missing skills, and match score.</p>
+
+            <textarea x-model="jobDescription" rows="8" placeholder="Paste the full job description here…&#10;&#10;e.g. We are looking for a Senior Product Manager with 5+ years experience in Agile, roadmap planning, stakeholder management…" class="field-input resize-none w-full text-sm leading-relaxed mb-3"></textarea>
+
+            <button @click="analyzeJD()" :disabled="!jobDescription.trim() || analyzingJD" class="w-full py-3 rounded-xl bg-glow-500 hover:bg-glow-400 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-all flex items-center justify-center gap-2">
+              <svg x-show="!analyzingJD" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M10.5 10.5l2.5 2.5"/></svg>
+              <svg x-show="analyzingJD" class="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 2a5 5 0 010 10"/></svg>
+              <span x-text="analyzingJD ? 'Analyzing…' : 'Analyze Job Description'"></span>
+            </button>
+          </div>
+
+          <!-- JD Results -->
+          <div x-show="jdAnalysis" x-transition class="space-y-4">
+            <!-- Match score -->
+            <div class="p-4 rounded-xl bg-white/3 border border-white/8">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-neutral-300">Match Score</span>
+                <span class="font-display text-xl font-medium" :class="jdAnalysis?.matchScore >= 70 ? 'text-green-400' : 'text-yellow-400'" x-text="`${jdAnalysis?.matchScore}%`"></span>
+              </div>
+              <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-700" :style="`width: ${jdAnalysis?.matchScore}%; background: ${jdAnalysis?.matchScore >= 70 ? '#4ade80' : '#facc15'}`"></div>
+              </div>
+            </div>
+
+            <!-- Keywords found -->
+            <div>
+              <h4 class="text-xs font-semibold text-green-400 uppercase tracking-wider mb-2">✓ Keywords Found in Your Resume</h4>
+              <div class="flex flex-wrap gap-1.5">
+                <template x-for="kw in jdAnalysis?.found" :key="kw">
+                  <span class="px-2.5 py-1 rounded-full text-xs bg-green-500/10 border border-green-500/20 text-green-400" x-text="kw"></span>
+                </template>
+                <span x-show="!jdAnalysis?.found?.length" class="text-xs text-neutral-500">None detected yet</span>
+              </div>
+            </div>
+
+            <!-- Missing keywords -->
+            <div>
+              <h4 class="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2">✕ Missing High-Priority Keywords</h4>
+              <div class="flex flex-wrap gap-1.5">
+                <template x-for="kw in jdAnalysis?.missing" :key="kw">
+                  <button @click="addSkillFromJD(kw)" class="px-2.5 py-1 rounded-full text-xs bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-1">
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 1v6M1 4h6"/></svg>
+                    <span x-text="kw"></span>
+                  </button>
+                </template>
+              </div>
+              <p x-show="jdAnalysis?.missing?.length" class="text-xs text-neutral-600 mt-2">Click to add to your Skills section</p>
+            </div>
+
+            <!-- Suggestions -->
+            <div x-show="jdAnalysis?.suggestions?.length">
+              <h4 class="text-xs font-semibold text-glow-400 uppercase tracking-wider mb-2">💡 Suggestions</h4>
+              <div class="space-y-2">
+                <template x-for="s in jdAnalysis?.suggestions" :key="s">
+                  <div class="flex items-start gap-2 text-xs text-neutral-400 leading-relaxed">
+                    <span class="text-glow-500 shrink-0 mt-0.5">→</span>
+                    <span x-text="s"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ═══ RIGHT PANEL: PREVIEW ═══ -->
+    <div :class="activePanel === 'preview' || (activePanel !== 'preview' && !showLanding) ? 'flex' : 'hidden md:flex'" class="flex-1 flex flex-col overflow-hidden bg-neutral-950/30">
+
+      <!-- Preview toolbar -->
+      <div class="h-12 border-b border-white/5 flex items-center justify-between px-5 shrink-0 bg-neutral-900/60 backdrop-blur">
+        <div class="flex items-center gap-2 text-sm text-neutral-400">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 7s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z"/><circle cx="7" cy="7" r="1.5"/></svg>
+          Live Preview
+          <!-- Auto-save indicator -->
+          <span x-show="lastSaved" class="flex items-center gap-1 text-xs text-neutral-600">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+            <span x-text="lastSaved"></span>
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Preview zoom -->
+          <div class="flex items-center gap-1 bg-white/5 rounded-lg p-0.5">
+            <button @click="previewZoom = Math.max(0.5, previewZoom - 0.1)" class="w-6 h-6 flex items-center justify-center text-neutral-400 hover:text-white rounded transition-colors text-xs">−</button>
+            <span class="text-xs text-neutral-500 w-10 text-center" x-text="`${Math.round(previewZoom * 100)}%`"></span>
+            <button @click="previewZoom = Math.min(1.5, previewZoom + 0.1)" class="w-6 h-6 flex items-center justify-center text-neutral-400 hover:text-white rounded transition-colors text-xs">+</button>
+          </div>
+
+          <button @click="exportPDF()" :disabled="pdfExporting" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-glow-500/80 hover:bg-glow-500 text-white transition-all disabled:opacity-60">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 2.5 3-2.5M1 9v1a1 1 0 001 1h8a1 1 0 001-1V9"/></svg>
+            Export PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview canvas -->
+      <div class="flex-1 overflow-auto flex items-start justify-center p-8 preview-canvas" :style="`--accent: ${resumeData.accentColor}`">
+        <div :style="`transform: scale(${previewZoom}); transform-origin: top center; transition: transform 0.2s`" class="w-full max-w-[794px]">
+          <div id="resume-preview" class="resume-preview-root bg-white text-gray-900 shadow-2xl" x-html="renderedResume"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════
+       MODALS & TOASTS
+  ═══════════════════════════════════════════════════ -->
+
+  <!-- Toast notification -->
+  <div x-show="toast.visible" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl bg-neutral-800 border border-white/10 shadow-xl text-sm text-white">
+    <span x-text="toast.emoji"></span>
+    <span x-text="toast.message"></span>
+  </div>
+
+  <!-- Story Mode modal -->
+  <div x-show="storyModeOpen" class="fixed inset-0 z-[80] flex items-center justify-center p-4" @keydown.escape.window="storyModeOpen = false">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="storyModeOpen = false"></div>
+    <div class="relative w-full max-w-lg bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+      <div class="p-6 border-b border-white/8">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-glow-500/15 text-glow-400 flex items-center justify-center text-lg">✦</div>
+          <div>
+            <h2 class="font-semibold text-white">Story Mode</h2>
+            <p class="text-xs text-neutral-500">Transform dry bullets into compelling achievement stories</p>
+          </div>
+        </div>
+      </div>
+      <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div x-show="!storyResult && !storyLoading">
+          <p class="text-sm text-neutral-400 mb-3">Your current bullet points for <strong class="text-white" x-text="storyJobTitle"></strong>:</p>
+          <div class="space-y-2">
+            <template x-for="b in storyBullets" :key="b">
+              <div class="flex items-start gap-2 text-sm text-neutral-300">
+                <span class="text-glow-500 shrink-0 mt-1">·</span>
+                <span x-text="b"></span>
+              </div>
+            </template>
+            <div x-show="!storyBullets.length" class="text-sm text-neutral-500 italic">No bullet points added yet.</div>
+          </div>
+        </div>
+
+        <div x-show="storyLoading" class="py-8 flex flex-col items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-glow-500/10 text-glow-400 flex items-center justify-center animate-pulse text-xl">✦</div>
+          <p class="text-sm text-neutral-400">Rewriting your story…</p>
+        </div>
+
+        <div x-show="storyResult" class="space-y-3">
+          <p class="text-xs font-semibold text-glow-400 uppercase tracking-wider">✦ Rewritten Stories</p>
+          <div class="space-y-2">
+            <template x-for="b in storyResult" :key="b">
+              <div class="flex items-start gap-2 text-sm text-neutral-300 p-3 bg-glow-500/5 border border-glow-500/15 rounded-xl">
+                <span class="text-glow-500 shrink-0 mt-0.5">·</span>
+                <span x-text="b"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 border-t border-white/8 flex items-center gap-3">
+        <button @click="storyModeOpen = false" class="flex-1 py-2.5 rounded-xl border border-white/10 text-sm text-neutral-400 hover:text-white hover:border-white/20 transition-all">Cancel</button>
+        <button x-show="!storyResult" @click="runStoryMode()" :disabled="storyLoading || !storyBullets.length" class="flex-1 py-2.5 rounded-xl bg-glow-500 hover:bg-glow-400 disabled:opacity-50 text-white text-sm font-medium transition-all">Rewrite with AI</button>
+        <button x-show="storyResult" @click="applyStoryResult()" class="flex-1 py-2.5 rounded-xl bg-glow-500 hover:bg-glow-400 text-white text-sm font-medium transition-all">Apply Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resume picker modal -->
+  <div x-show="showResumePicker" class="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4" @keydown.escape.window="showResumePicker = false">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showResumePicker = false"></div>
+    <div class="relative w-full max-w-md bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+      <div class="p-5 border-b border-white/8 flex items-center justify-between">
+        <h2 class="font-semibold text-white">My Resumes</h2>
+        <button @click="createNewResume()" class="text-xs text-glow-400 hover:text-glow-300 flex items-center gap-1.5 transition-colors">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 1v10M1 6h10"/></svg>
+          New Resume
+        </button>
+      </div>
+      <div class="p-4 max-h-80 overflow-y-auto space-y-2">
+        <template x-for="(resume, idx) in savedResumes" :key="resume.id">
+          <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all group cursor-pointer" @click="loadResume(resume.id); showResumePicker = false">
+            <div class="w-9 h-9 rounded-lg bg-glow-500/10 flex items-center justify-center text-glow-400 text-sm">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="1" width="10" height="14" rx="1.5"/><path d="M6 5h4M6 8h4M6 11h2"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-white truncate" x-text="resume.name || 'Untitled Resume'"></div>
+              <div class="text-xs text-neutral-500 mt-0.5" x-text="resume.updatedAt"></div>
+            </div>
+            <button @click.stop="deleteResume(resume.id)" class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 flex items-center justify-center transition-all">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h8M5 3V1.5h2V3M4 5v5M8 5v5M3 3l.5 7h5L9 3"/></svg>
+            </button>
+          </div>
+        </template>
+        <div x-show="!savedResumes.length" class="py-6 text-center text-sm text-neutral-500">No saved resumes yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS modules -->
+  <script src="js/utils.js"></script>
+  <script src="js/resume-data.js"></script>
+  <script src="js/preview-renderer.js"></script>
+  <script src="js/ats-optimizer.js"></script>
+  <script src="js/story-rewriter.js"></script>
+  <script src="js/pdf-export.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
