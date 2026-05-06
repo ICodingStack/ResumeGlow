@@ -29,8 +29,8 @@ ResumeGlow isn't just another resume builder. It's an **intelligent career tool*
 No installation required. Just open `index.html` in any modern browser.
 
 ```bash
-git clone https://github.com/yourusername/resumeglow.git
-cd resumeglow
+git clone https://github.com/ICodingStack/ResumeGlow.git
+cd ResumeGlow
 open index.html   # macOS
 # or
 start index.html  # Windows
@@ -233,4 +233,3 @@ Built with care using [Alpine.js](https://alpinejs.dev), [Tailwind CSS](https://
 ---
 
 **Made with love ❤️ by [BlackBirdo](https://blackbirdo.com)**
-<p align="center"><em>ResumeGlow — Resumes That Get You Hired</em></p>
